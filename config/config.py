@@ -13,8 +13,14 @@ class Server:
 
 
 @dataclass
+class Api:
+    key: str
+
+
+@dataclass
 class Config:
     server: Server
+    api: Api
 
 
 def load_config() -> Config:
@@ -25,7 +31,10 @@ def load_config() -> Config:
             host=getenv("SERVER_HOST"),
             port=int(getenv("SERVER_PORT")),
             debug=bool(getenv("SERVER_DEBUG")),
-        )
+        ),
+        api=Api(
+            key=getenv("API_KEY"),
+        ),
     )
 
 
