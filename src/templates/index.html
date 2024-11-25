@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Погода в городах</title>
+</head>
+<body>
+<form method="post">
+    <p>Укажите город начала путешествия</p>
+    <input type="text" id="from_city" name="from_city" required>
+    <p>Укажите город конца путешествия</p>
+
+    <input type="text" id="to_city" name="to_city" required>
+    <button type="submit">Узнать погоду!</button>
+</form>
+<p>Погода в {{ from_city_name }}: {{ from_city_text }}</p>
+<p>Погода в {{ to_city_name }}: {{ to_city_text }}</p>
+</body>
+</html>
