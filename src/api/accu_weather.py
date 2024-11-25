@@ -11,6 +11,7 @@ class AccuWeatherApi(WeatherDataInterface, RequestBase):
         super().__init__()
 
     def get_location(self, city: str) -> str:
+
         data = self.get(
             url="/locations/v1/cities/search",
             params={
@@ -19,7 +20,6 @@ class AccuWeatherApi(WeatherDataInterface, RequestBase):
                 "details": True,
             }
         )
-
         return data[0].get("Key")
 
     def get_weather(self, city: str) -> WeatherData:
@@ -36,10 +36,13 @@ class AccuWeatherApi(WeatherDataInterface, RequestBase):
                 "details": True,
                 "metric": True,
             })
-
-        return WeatherData(
-            temperature=data[0].get("Temperature", {}).get("Value", 0),
-            humidity=data[0].get("RelativeHumidity", -1),
-            winter_speed=data[0].get("Wind", {}).get("Speed", {}).get("Value", -1),
-            rain_probability=data[0].get("RainProbability"),
-        )
+        print(data)
+        try:
+            return WeatherData(
+                temperature=data[0].get("Temperature", {}).get("Value", 0),
+                humidity=data[0].get("RelativeHumidity", -1),
+                winter_speed=data[0].get("Wind", {}).get("Speed", {}).get("Value", -1),
+                rain_probability=data[0].get("RainProbability"),
+            )
+        except Exception:
+            raise APIFetchException(f"не удалось распаковать данные от сервера")

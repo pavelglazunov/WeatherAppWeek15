@@ -25,13 +25,13 @@ def get_weather():
         from_city_weather = api.get_weather(request.form.get("from_city"))
         from_city_text = weather.check(from_city_weather)
     except APIFetchException as e:
-        from_city_text = e.message
+        from_city_text = "Ошибка: " + e.message
 
     try:
         to_city_weather = api.get_weather(request.form.get("to_city"))
         to_city_text = weather.check(to_city_weather)
     except APIFetchException as e:
-        to_city_text = e.message
+        to_city_text = "Ошибка: " + e.message
 
     return render_template(
         "index.html",

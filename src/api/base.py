@@ -1,5 +1,7 @@
 import requests
 
+from src.exceptions import APIFetchException
+
 
 class RequestBase:
     base_url: str
@@ -11,6 +13,8 @@ class RequestBase:
             headers = {}
 
         full_url = self.base_url + url
-        response = requests.get(full_url, params=params, headers=headers)
-
-        return response.json()
+        try:
+            response = requests.get(full_url, params=params, headers=headers)
+            return response.json()
+        except Exception:
+            raise APIFetchException("не удалось подключиться к серверу")
