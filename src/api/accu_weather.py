@@ -25,7 +25,7 @@ class AccuWeatherApi(WeatherDataInterface, RequestBase):
     def get_weather(self, city: str) -> WeatherData:
         try:
             location = self.get_location(city)
-        except Exception:
+        except Exception as e:
             raise APIFetchException(f"Город {city} не найден")
 
         url = f"/forecasts/v1/hourly/1hour/{location}"
@@ -36,7 +36,7 @@ class AccuWeatherApi(WeatherDataInterface, RequestBase):
                 "details": True,
                 "metric": True,
             })
-        print(data)
+
         try:
             return WeatherData(
                 temperature=data[0].get("Temperature", {}).get("Value", 0),

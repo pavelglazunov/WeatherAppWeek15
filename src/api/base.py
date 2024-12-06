@@ -17,4 +17,4 @@ class RequestBase:
             response = requests.get(full_url, params=params, headers=headers)
             return response.json()
         except Exception:
-            raise APIFetchException("не удалось подключиться к серверу")
+            raise APIFetchException(f"не удалось подключиться к API сервису")

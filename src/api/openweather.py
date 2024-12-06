@@ -13,13 +13,10 @@ class OpenWeatherApi(WeatherDataInterface, RequestBase):
         super().__init__()
 
     def get_weather(self, city: str) -> WeatherData:
-        print(122222)
         data = self.get("/", params={
             "q": city,
             "appid": self.token,
         })
-        print(data)
-        print(231231)
 
         return WeatherData(
             temperature=data.get("main", {}).get("temp", 0) - 273.15,
