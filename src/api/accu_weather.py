@@ -22,13 +22,13 @@ class AccuWeatherApi(WeatherDataInterface, RequestBase):
         )
         return data[0].get("Key")
 
-    def get_weather(self, city: str) -> WeatherData:
+    def get_weather(self, city: str) -> list[dict]:
         try:
             location = self.get_location(city)
         except Exception as e:
             raise APIFetchException(f"Город {city} не найден")
 
-        url = f"/forecasts/v1/hourly/1hour/{location}"
+        url = f"/forecasts/v1/daily/5day/{location}"
         data = self.get(
             url=url,
             params={
@@ -38,11 +38,17 @@ class AccuWeatherApi(WeatherDataInterface, RequestBase):
             })
 
         try:
-            return WeatherData(
-                temperature=data[0].get("Temperature", {}).get("Value", 0),
-                humidity=data[0].get("RelativeHumidity", -1),
-                winter_speed=data[0].get("Wind", {}).get("Speed", {}).get("Value", -1),
-                rain_probability=data[0].get("RainProbability"),
-            )
+            forecasts = []
+            for day in data.get("DailyForecasts", []):
+                min_temperature = day.get("Temperature", {}).get("Minimum", {}).get("Value", 0)
+                max_temperature = day.get("Temperature", {}).get("Maximum", {}).get("Value", 0)
+                forecasts.append({
+                    "date": day.get("Date"),
+                    "temperature_avg": (min_temperature + max_temperature) / 2,
+                    "temperature_min": min_temperature,
+                    "temperature_max": max_temperature,
+                })
+
+            return forecasts
         except Exception:
             raise APIFetchException(f"не удалось распаковать данные от сервера")

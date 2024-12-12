@@ -1,42 +1,90 @@
-import os
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objs as go
+from dash import Dash
+from dash.dependencies import Input, Output, State
 
-from flask import Blueprint, render_template, request
-
-from config.config import Config
-from src.api import AccuWeatherApi, OpenWeatherApi
+from config.config import Config, load_config
+from src.api import AccuWeatherApi
 from src.exceptions import APIFetchException
-from src.services import weather
+from src.services import render
 
-template_folder = os.path.join(os.getcwd(), "src", "templates")
-router = Blueprint("weather", __name__, url_prefix="/weather", template_folder=template_folder)
-
-
-@router.route("/", methods=["GET"])
-def weather_page():
-    return render_template("index.html")
+app = Dash(__name__)
+app.layout = render.dom
+colors = px.colors.qualitative.Plotly
 
 
-@router.route("/", methods=["POST"])
-def get_weather():
-    config: Config = request.environ.get("config")
+@app.callback(
+    Output('city-inputs', 'children'),
+    Input('add-city-button', 'n_clicks'),
+    State('city-inputs', 'children'),
+)
+def add_city_input(n_clicks, children):
+    if n_clicks > 0:
+        children.append(render.new_input(n_clicks))
+    return children
+
+
+@app.callback(
+    Output("weather-graph", "figure"),
+    Output("error-message", "children"),
+    Input("submit-button", "n_clicks"),
+    Input("city-inputs", "children"),
+)
+def update_graph(n_clicks, city_inputs):
+    if n_clicks <= 0:
+        return go.Figure(), ""
+
+    dfs = []
+    error_messages = []
+    city_names = []
+    for input_component in city_inputs:
+        if input_component.get("props", {}).get("value"):
+            city_names.append(input_component['props']['value'])
+        else:
+            input_id = input_component.get('props', {}).get('id', 'ID не найден')
+            error_messages.append(f"Город {input_id} не найден")
+
+    config: Config = load_config()
     api = AccuWeatherApi(config.api.key)
-    # api = OpenWeatherApi(config.api.key)
-    try:
-        from_city_weather = api.get_weather(request.form.get("from_city"))
-        from_city_text = weather.check(from_city_weather)
-    except APIFetchException as e:
-        from_city_text = "Ошибка: " + e.message
 
-    try:
-        to_city_weather = api.get_weather(request.form.get("to_city"))
-        to_city_text = weather.check(to_city_weather)
-    except APIFetchException as e:
-        to_city_text = "Ошибка: " + e.message
+    for city_name in city_names:
+        try:
+            from_city_weathers = api.get_weather(city_name)
+        except APIFetchException as err:
+            error_messages.append(f"Ошибка для города '{city_name}': {err.message}")
+            continue
 
-    return render_template(
-        "index.html",
-        from_city_name=request.form.get("from_city"),
-        to_city_name=request.form.get("to_city"),
-        from_city_text=from_city_text,
-        to_city_text=to_city_text,
-    )
+        dfs.append(pd.DataFrame(from_city_weathers))
+
+    fig = go.Figure()
+
+    for i, (df, city) in enumerate(zip(dfs, city_names)):
+        color = colors[i % len(colors)]
+        fig.add_trace(render.new_scatter(
+            df,
+            "temperature_avg",
+            f"Средняя температура в {city}",
+            color,
+        ))
+        fig.add_trace(render.new_scatter(
+            df,
+            "temperature_max",
+            f"Максимальная температура в {city}",
+            color,
+            is_dash=True,
+        ))
+        fig.add_trace(render.new_scatter(
+            df,
+            "temperature_min",
+            f"Минимальная температура в {city}",
+            color,
+            is_dash=True,
+        ))
+
+    fig.update_layout(title="Прогноз погоды на 5 дней",
+                      xaxis_title="Дата",
+                      yaxis_title="Температура (°C)",
+                      legend_title="Города")
+
+    return fig, " и ".join(error_messages)
